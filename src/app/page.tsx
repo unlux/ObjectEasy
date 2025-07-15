@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { InfoModal } from "@/components/InfoModal";
 
 const awsRegions = [
   "af-south-1",
@@ -52,6 +54,7 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [credentialsStored, setCredentialsStored] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const storedAccessKeyId = localStorage.getItem("accessKeyId");
@@ -70,6 +73,11 @@ const UploadPage = () => {
       setBucketName(storedBucketName);
       setRegion(storedRegion);
       setCredentialsStored(true);
+    }
+
+    const hasSeenModal = localStorage.getItem("hasSeenModal");
+    if (!hasSeenModal) {
+      setIsModalOpen(true);
     }
   }, []);
 
@@ -98,13 +106,23 @@ const UploadPage = () => {
         },
       });
 
-      const params = {
+      const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: file.name,
-        Body: file,
-      };
+      });
 
-      await s3Client.send(new PutObjectCommand(params));
+      const presignedUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 3600,
+      });
+
+      await fetch(presignedUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
       setSuccess("File uploaded successfully!");
       localStorage.setItem("accessKeyId", accessKeyId);
       localStorage.setItem("secretAccessKey", secretAccessKey);
@@ -112,7 +130,13 @@ const UploadPage = () => {
       localStorage.setItem("region", region);
       setCredentialsStored(true);
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === "Failed to fetch") {
+        setError(
+          "CORS Error: Please ensure your S3 bucket has the correct CORS configuration to allow PUT requests from this origin."
+        );
+      } else {
+        setError(`An error occurred: ${err.message}`);
+      }
     } finally {
       setUploading(false);
     }
@@ -134,8 +158,14 @@ const UploadPage = () => {
     setCredentialsStored(false);
   };
 
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    localStorage.setItem("hasSeenModal", "true");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <InfoModal isOpen={isModalOpen} onClose={handleModalClose} />
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="text-2xl">Upload to S3</CardTitle>
