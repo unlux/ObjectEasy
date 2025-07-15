@@ -1,103 +1,221 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect } from "react";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export default function Home() {
+const awsRegions = [
+  "af-south-1",
+  "ap-east-1",
+  "ap-northeast-1",
+  "ap-northeast-2",
+  "ap-south-1",
+  "ap-southeast-1",
+  "ap-southeast-2",
+  "ca-central-1",
+  "eu-central-1",
+  "eu-north-1",
+  "eu-south-1",
+  "eu-west-1",
+  "eu-west-2",
+  "eu-west-3",
+  "me-south-1",
+  "sa-east-1",
+  "us-east-1",
+  "us-east-2",
+  "us-west-1",
+  "us-west-2",
+].sort();
+
+const UploadPage = () => {
+  const [accessKeyId, setAccessKeyId] = useState("");
+  const [secretAccessKey, setSecretAccessKey] = useState("");
+  const [bucketName, setBucketName] = useState("");
+  const [region, setRegion] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [credentialsStored, setCredentialsStored] = useState(false);
+
+  useEffect(() => {
+    const storedAccessKeyId = localStorage.getItem("accessKeyId");
+    const storedSecretAccessKey = localStorage.getItem("secretAccessKey");
+    const storedBucketName = localStorage.getItem("bucketName");
+    const storedRegion = localStorage.getItem("region");
+
+    if (
+      storedAccessKeyId &&
+      storedSecretAccessKey &&
+      storedBucketName &&
+      storedRegion
+    ) {
+      setAccessKeyId(storedAccessKeyId);
+      setSecretAccessKey(storedSecretAccessKey);
+      setBucketName(storedBucketName);
+      setRegion(storedRegion);
+      setCredentialsStored(true);
+    }
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
+      setError("All fields are required.");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const s3Client = new S3Client({
+        region,
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
+      });
+
+      const params = {
+        Bucket: bucketName,
+        Key: file.name,
+        Body: file,
+      };
+
+      await s3Client.send(new PutObjectCommand(params));
+      setSuccess("File uploaded successfully!");
+      localStorage.setItem("accessKeyId", accessKeyId);
+      localStorage.setItem("secretAccessKey", secretAccessKey);
+      localStorage.setItem("bucketName", bucketName);
+      localStorage.setItem("region", region);
+      setCredentialsStored(true);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const clearCredentials = () => {
+    localStorage.removeItem("accessKeyId");
+    localStorage.removeItem("secretAccessKey");
+    localStorage.removeItem("bucketName");
+    localStorage.removeItem("region");
+    setAccessKeyId("");
+    setSecretAccessKey("");
+    setBucketName("");
+    setRegion("");
+    setCredentialsStored(false);
+  };
+
+  const editCredentials = () => {
+    setCredentialsStored(false);
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl">Upload to S3</CardTitle>
+          <CardDescription>
+            Provide your AWS credentials to upload files to your S3 bucket.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>AWS Access Key ID</Label>
+            <Input
+              type="password"
+              value={accessKeyId}
+              onChange={(e) => setAccessKeyId(e.target.value)}
+              disabled={credentialsStored}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div className="space-y-2">
+            <Label>AWS Secret Access Key</Label>
+            <Input
+              type="password"
+              value={secretAccessKey}
+              onChange={(e) => setSecretAccessKey(e.target.value)}
+              disabled={credentialsStored}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>S3 Bucket Name</Label>
+            <Input
+              value={bucketName}
+              onChange={(e) => setBucketName(e.target.value)}
+              disabled={credentialsStored}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>AWS Region</Label>
+            <Select
+              value={region}
+              onValueChange={setRegion}
+              disabled={credentialsStored}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a region" />
+              </SelectTrigger>
+              <SelectContent>
+                {awsRegions.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {credentialsStored && (
+            <div className="flex space-x-2">
+              <Button onClick={editCredentials} variant="outline">
+                Edit
+              </Button>
+              <Button onClick={clearCredentials} variant="destructive">
+                Clear
+              </Button>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>File</Label>
+            <Input type="file" onChange={handleFileChange} />
+          </div>
+          <Button
+            onClick={handleUpload}
+            disabled={uploading}
+            className="w-full"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {uploading ? "Uploading..." : "Upload"}
+          </Button>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {success && <p className="text-green-500 text-sm">{success}</p>}
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default UploadPage;
