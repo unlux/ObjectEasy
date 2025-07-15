@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InfoModal } from "@/components/InfoModal";
+import { UploadHistory } from "@/components/UploadHistory";
 
 const awsRegions = [
   "af-south-1",
@@ -42,7 +43,7 @@ const awsRegions = [
   "us-east-2",
   "us-west-1",
   "us-west-2",
-].sort();
+].sort((a, b) => a.localeCompare(b));
 
 const UploadPage = () => {
   const [accessKeyId, setAccessKeyId] = useState("");
@@ -55,6 +56,9 @@ const UploadPage = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [credentialsStored, setCredentialsStored] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploadHistory, setUploadHistory] = useState<
+    { fileName: string; bucketName: string }[]
+  >([]);
 
   useEffect(() => {
     const storedAccessKeyId = localStorage.getItem("accessKeyId");
@@ -78,6 +82,11 @@ const UploadPage = () => {
     const hasSeenModal = localStorage.getItem("hasSeenModal");
     if (!hasSeenModal) {
       setIsModalOpen(true);
+    }
+
+    const storedHistory = localStorage.getItem("uploadHistory");
+    if (storedHistory) {
+      setUploadHistory(JSON.parse(storedHistory));
     }
   }, []);
 
@@ -129,6 +138,13 @@ const UploadPage = () => {
       localStorage.setItem("bucketName", bucketName);
       localStorage.setItem("region", region);
       setCredentialsStored(true);
+
+      const newHistory = [
+        ...uploadHistory,
+        { fileName: file.name, bucketName },
+      ];
+      setUploadHistory(newHistory);
+      localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
     } catch (err: any) {
       if (err.message === "Failed to fetch") {
         setError(
@@ -140,6 +156,19 @@ const UploadPage = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleSaveCredentials = () => {
+    if (!accessKeyId || !secretAccessKey || !bucketName || !region) {
+      setError("All credential fields must be filled to save.");
+      return;
+    }
+    localStorage.setItem("accessKeyId", accessKeyId);
+    localStorage.setItem("secretAccessKey", secretAccessKey);
+    localStorage.setItem("bucketName", bucketName);
+    localStorage.setItem("region", region);
+    setCredentialsStored(true);
+    setError(null);
   };
 
   const clearCredentials = () => {
@@ -158,6 +187,11 @@ const UploadPage = () => {
     setCredentialsStored(false);
   };
 
+  const handleClearHistory = () => {
+    setUploadHistory([]);
+    localStorage.removeItem("uploadHistory");
+  };
+
   const handleModalClose = () => {
     setIsModalOpen(false);
     localStorage.setItem("hasSeenModal", "true");
@@ -170,80 +204,91 @@ const UploadPage = () => {
         <CardHeader>
           <CardTitle className="text-2xl">Upload to S3</CardTitle>
           <CardDescription>
-            Provide your AWS credentials to upload files to your S3 bucket.
+            {credentialsStored
+              ? "Credentials are saved. You can now upload files."
+              : "Provide your AWS credentials to upload files to your S3 bucket."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>AWS Access Key ID</Label>
-            <Input
-              type="password"
-              value={accessKeyId}
-              onChange={(e) => setAccessKeyId(e.target.value)}
-              disabled={credentialsStored}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>AWS Secret Access Key</Label>
-            <Input
-              type="password"
-              value={secretAccessKey}
-              onChange={(e) => setSecretAccessKey(e.target.value)}
-              disabled={credentialsStored}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>S3 Bucket Name</Label>
-            <Input
-              value={bucketName}
-              onChange={(e) => setBucketName(e.target.value)}
-              disabled={credentialsStored}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>AWS Region</Label>
-            <Select
-              value={region}
-              onValueChange={setRegion}
-              disabled={credentialsStored}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a region" />
-              </SelectTrigger>
-              <SelectContent>
-                {awsRegions.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {credentialsStored && (
-            <div className="flex space-x-2">
-              <Button onClick={editCredentials} variant="outline">
-                Edit
+          {!credentialsStored && (
+            <>
+              <div className="space-y-2">
+                <Label>AWS Access Key ID</Label>
+                <Input
+                  type="password"
+                  value={accessKeyId}
+                  onChange={(e) => setAccessKeyId(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>AWS Secret Access Key</Label>
+                <Input
+                  type="password"
+                  value={secretAccessKey}
+                  onChange={(e) => setSecretAccessKey(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>S3 Bucket Name</Label>
+                <Input
+                  value={bucketName}
+                  onChange={(e) => setBucketName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>AWS Region</Label>
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {awsRegions.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleSaveCredentials} className="w-full">
+                Save Credentials
               </Button>
-              <Button onClick={clearCredentials} variant="destructive">
-                Clear
-              </Button>
-            </div>
+            </>
           )}
-          <div className="space-y-2">
-            <Label>File</Label>
-            <Input type="file" onChange={handleFileChange} />
-          </div>
-          <Button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="w-full"
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </Button>
+
+          {credentialsStored && (
+            <>
+              <div className="flex space-x-2">
+                <Button onClick={editCredentials} variant="outline">
+                  Edit
+                </Button>
+                <Button onClick={clearCredentials} variant="destructive">
+                  Clear
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>File</Label>
+                <Input type="file" onChange={handleFileChange} />
+              </div>
+              <Button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full"
+              >
+                {uploading ? "Uploading..." : "Upload"}
+              </Button>
+            </>
+          )}
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {success && <p className="text-green-500 text-sm">{success}</p>}
         </CardContent>
       </Card>
+      <UploadHistory
+        history={uploadHistory}
+        credentials={{ accessKeyId, secretAccessKey, region }}
+        onClearHistory={handleClearHistory}
+      />
     </div>
   );
 };
