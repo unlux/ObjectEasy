@@ -11,6 +11,12 @@ interface Credentials {
   readonly region: string;
 }
 
+export interface UploadResult {
+  success: boolean;
+  sanitizedKey?: string;
+  error?: string;
+}
+
 function createS3Client(credentials: Credentials) {
   return new S3Client({
     region: credentials.region,
@@ -47,7 +53,7 @@ export function uploadFile(
 
   const xhr = new XMLHttpRequest();
 
-  const promise = new Promise((resolve, reject) => {
+  const promise = new Promise<UploadResult>((resolve, reject) => {
     getSignedUrl(s3Client, putCommand, {
       expiresIn: 3600,
     })

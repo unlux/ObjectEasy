@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
-import { uploadFile } from "@/lib/s3";
+import { uploadFile, UploadResult } from "@/lib/s3";
 import { Progress } from "@/components/ui/progress";
 
 const awsRegions = [
@@ -94,10 +94,7 @@ const UploadPage = () => {
       setCredentialsStored(true);
     }
 
-    const hasSeenModal = localStorage.getItem("hasSeenModal");
-    if (!hasSeenModal) {
-      setIsModalOpen(true);
-    }
+    setIsModalOpen(true); // Always open modal on initial load
 
     const storedHistory = localStorage.getItem("uploadHistory");
     if (storedHistory) {
@@ -149,7 +146,7 @@ const UploadPage = () => {
 
       setXhr({ abort } as any); // Store the abort function
 
-      const result = await promise;
+      const result: UploadResult = await promise;
 
       if (result.success) {
         setFeedback({
