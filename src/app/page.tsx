@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button as StatefulButton } from "@/components/ui/stateful-button";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -51,8 +52,10 @@ const UploadPage = () => {
   const [region, setRegion] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [credentialsStored, setCredentialsStored] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<
@@ -95,44 +98,54 @@ const UploadPage = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
-      setError("All fields are required.");
-      return;
-    }
-
-    setUploading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await uploadFile(
-        { accessKeyId, secretAccessKey, region },
-        bucketName,
-        file
-      );
-
-      if (result.success) {
-        setSuccess("File uploaded successfully!");
-        const newHistory = [
-          ...uploadHistory,
-          { fileName: result.sanitizedKey!, bucketName },
-        ];
-        setUploadHistory(newHistory);
-        localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
-      } else {
-        setError(result.error);
+  const handleUpload = () => {
+    return new Promise(async (resolve, reject) => {
+      if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
+        setFeedback({ message: "All fields are required.", type: "error" });
+        return reject(new Error("All fields are required."));
       }
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setUploading(false);
-    }
+
+      setUploading(true);
+      setFeedback(null);
+
+      try {
+        const result = await uploadFile(
+          { accessKeyId, secretAccessKey, region },
+          bucketName,
+          file
+        );
+
+        if (result.success) {
+          setFeedback({
+            message: "File uploaded successfully!",
+            type: "success",
+          });
+          const newHistory = [
+            ...uploadHistory,
+            { fileName: result.sanitizedKey!, bucketName },
+          ];
+          setUploadHistory(newHistory);
+          localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
+          resolve(result);
+        } else {
+          setFeedback({ message: result.error, type: "error" });
+          reject(new Error(result.error));
+        }
+      } catch (error: any) {
+        setFeedback({ message: error.message, type: "error" });
+        reject(error);
+      } finally {
+        setUploading(false);
+      }
+    });
   };
 
   const handleSaveCredentials = () => {
     if (!accessKeyId || !secretAccessKey || !bucketName || !region) {
-      setError("All credential fields must be filled to save.");
+      setFeedback({
+        message: "All credential fields must be filled to save.",
+        type: "error",
+      });
       return;
     }
     localStorage.setItem("accessKeyId", accessKeyId);
@@ -140,7 +153,7 @@ const UploadPage = () => {
     localStorage.setItem("bucketName", bucketName);
     localStorage.setItem("region", region);
     setCredentialsStored(true);
-    setError(null);
+    setFeedback(null);
   };
 
   const clearCredentials = () => {
@@ -244,18 +257,25 @@ const UploadPage = () => {
                 <Label>File</Label>
                 <Input type="file" onChange={handleFileChange} />
               </div>
-              <Button
+              <StatefulButton
                 onClick={handleUpload}
                 disabled={uploading}
                 className="w-full"
               >
                 {uploading ? "Uploading..." : "Upload"}
-              </Button>
+              </StatefulButton>
             </>
           )}
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          {success && <p className="text-green-500 text-sm">{success}</p>}
+          {feedback && (
+            <p
+              className={`text-sm text-center ${
+                feedback.type === "success" ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {feedback.message}
+            </p>
+          )}
         </CardContent>
       </Card>
       <UploadHistory
