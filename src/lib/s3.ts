@@ -49,7 +49,7 @@ export async function uploadFile(
       expiresIn: 3600,
     });
 
-    await fetch(presignedUrl, {
+    const response = await fetch(presignedUrl, {
       method: "PUT",
       body: file,
       headers: {
@@ -57,20 +57,37 @@ export async function uploadFile(
       },
     });
 
-    return { success: true, error: null, sanitizedKey };
-  } catch (err: any) {
-    if (err.message === "Failed to fetch") {
+    if (response.ok) {
+      return { success: true, sanitizedKey };
+    } else {
+      const errorText = await response.text();
+      console.error("S3 Upload Error:", errorText, "Status:", response.status);
+      // Basic XML parsing to get the error code and message from S3 response
+      const codeMatch = errorText.match(/<Code>(.*?)<\/Code>/);
+      const messageMatch = errorText.match(/<Message>(.*?)<\/Message>/);
+      const code = codeMatch ? codeMatch[1] : "Unknown";
+      const message = messageMatch
+        ? messageMatch[1]
+        : "An unknown error occurred.";
+
+      return {
+        success: false,
+        error: `Upload failed with status ${response.status}. Code: ${code}. Message: ${message}`,
+      };
+    }
+  } catch (error: any) {
+    console.error("An error occurred during the upload process:", error);
+    // Handle client-side errors (e.g., network issues)
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       return {
         success: false,
         error:
-          "CORS Error: Please ensure your S3 bucket has the correct CORS configuration to allow PUT requests from this origin.",
-        sanitizedKey: null,
+          "A network error occurred. This is often due to a CORS configuration issue on your S3 bucket. Please ensure your bucket's CORS policy allows PUT requests from this origin. And, please check your credentials",
       };
     }
     return {
       success: false,
-      error: `An error occurred: ${err.message}`,
-      sanitizedKey: null,
+      error: error.message || "An unknown client-side error occurred.",
     };
   }
 }

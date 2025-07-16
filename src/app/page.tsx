@@ -107,6 +107,18 @@ const UploadPage = () => {
     }
   };
 
+  const handleClearFile = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFile(null);
+    const fileInput = document.getElementById(
+      "file-upload"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
   const handleUpload = async (
     event: React.MouseEvent<HTMLButtonElement>
   ): Promise<void> => {
@@ -258,13 +270,13 @@ const UploadPage = () => {
             <>
               <div className="flex space-x-2">
                 <Button onClick={editCredentials} variant="outline">
-                  Edit
+                  Edit Credentials
                 </Button>
                 <Button onClick={clearCredentials} variant="destructive">
-                  Clear
+                  Clear Credentials
                 </Button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Label htmlFor="file-upload">File</Label>
                 <div className="relative">
                   <Input
@@ -281,9 +293,31 @@ const UploadPage = () => {
                       {file ? file.name : "Select a file"}
                     </span>
                     {file && (
-                      <span className="ml-2 flex-shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                        {formatFileSize(file.size)}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="flex-shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {formatFileSize(file.size)}
+                        </span>
+                        <button
+                          onClick={handleClearFile}
+                          className="p-0.5 rounded-full bg-gray-300 hover:bg-gray-400 text-gray-600 hover:text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-300"
+                          aria-label="Clear file"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     )}
                   </label>
                 </div>
