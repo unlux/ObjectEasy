@@ -65,7 +65,7 @@ const UploadPage = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSpeed, setUploadSpeed] = useState(0);
-  const [xhr, setXhr] = useState<XMLHttpRequest | null>(null);
+  const [xhr, setXhr] = useState<{ abort: () => void } | null>(null);
   const [feedback, setFeedback] = useState<{
     message: string;
     type: "success" | "error";
@@ -121,9 +121,7 @@ const UploadPage = () => {
     }
   };
 
-  const handleUpload = async (
-    event: React.MouseEvent<HTMLButtonElement>
-  ): Promise<void> => {
+  const handleUpload = async (): Promise<void> => {
     if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
       setFeedback({ message: "All fields are required.", type: "error" });
       throw new Error("All fields are required.");
@@ -145,7 +143,7 @@ const UploadPage = () => {
         }
       );
 
-      setXhr({ abort } as any); // Store the abort function
+      setXhr({ abort }); // Store the abort function
 
       const result: UploadResult = await promise;
 
@@ -162,15 +160,20 @@ const UploadPage = () => {
         localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
       } else {
         const errorMessage =
-          (result as any).error || "An unknown error occurred during upload.";
+          result.error || "An unknown error occurred during upload.";
         setFeedback({ message: errorMessage, type: "error" });
         throw new Error(errorMessage);
       }
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
-        setFeedback({ message: error.message || error.error, type: "error" });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.name !== "AbortError") {
+          setFeedback({ message: error.message, type: "error" });
+          throw error;
+        }
+      } else {
+        setFeedback({ message: "An unexpected error occurred.", type: "error" });
+        throw error;
       }
-      throw error;
     } finally {
       setUploading(false);
       setXhr(null);

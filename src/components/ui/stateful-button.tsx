@@ -1,16 +1,25 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { motion, AnimatePresence, useAnimate } from "motion/react";
+import { motion, useAnimate, HTMLMotionProps } from "motion/react";
 
-interface ButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+type MotionButtonProps = Omit<
+  HTMLMotionProps<"button">,
+  "onClick" | "onDrag" | "onDragStart" | "onDragEnd"
+>;
+
+interface ButtonProps extends MotionButtonProps {
   className?: string;
   children: React.ReactNode;
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
 }
 
-export const Button = ({ className, children, ...props }: ButtonProps) => {
+export const Button = ({
+  className,
+  children,
+  onClick: propsOnClick,
+  ...props
+}: ButtonProps) => {
   const [scope, animate] = useAnimate();
   const [status, setStatus] = React.useState<
     "idle" | "loading" | "success" | "error"
@@ -115,7 +124,7 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
     }
     await animateLoading();
     try {
-      await props.onClick?.(event);
+      await propsOnClick?.(event);
       setStatus("success");
       await animateSuccess();
     } catch (e) {
@@ -124,16 +133,6 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
       await animateError();
     }
   };
-
-  const {
-    onClick,
-    onDrag,
-    onDragStart,
-    onDragEnd,
-    onAnimationStart,
-    onAnimationEnd,
-    ...buttonProps
-  } = props;
 
   return (
     <motion.button
@@ -152,7 +151,7 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
         },
         className
       )}
-      {...buttonProps}
+      {...props}
       onClick={handleClick}
     >
       <motion.div layout className="flex items-center gap-2">

@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ObjectEzy
+
+![ObjectEzy Logo](./public/logo.png)
+
+ObjectEzy is a simple, secure, client-side file uploader for Amazon S3. It allows you to upload files directly to your S3 bucket from your browser without any server-side processing. Your AWS credentials are stored securely in your browser's local storage and are never transmitted to any server other than AWS.
+
+## Features
+
+- **Client-Side Uploads:** Files are sent directly to S3, ensuring privacy and reducing server load.
+- **Local Credential Storage:** AWS credentials are saved in the browser's `localStorage`, so you don't have to enter them every time.
+- **Secure:** Your credentials are not exposed to any third-party servers.
+- **Upload Progress:** Monitor upload progress with a real-time progress bar and speed indicator.
+- **Cancel Uploads:** Cancel uploads that are in progress.
+- **Upload History:** Keep track of your uploaded files and copy their S3 links with a single click.
+- **Custom File Input:** A modern file input that displays the file name and size.
+- **Built with Next.js & Shadcn UI:** A modern, responsive, and accessible user interface.
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org/) - React Framework
+- [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-First CSS Framework
+- [Shadcn UI](https://ui.shadcn.com/) - Re-usable components built using Radix UI and Tailwind CSS.
+- [AWS SDK for JavaScript v3](https://aws.amazon.com/sdk-for-javascript/) - For S3 communication.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18.x or later)
+- npm, yarn, or pnpm
+
+### Installation
+
+1.  Clone the repository:
+
+    ```bash
+    git clone https://github.com/your-username/objectezy.git
+    cd objectezy
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or
+    yarn install
+    # or
+    pnpm install
+    ```
+
+### Running the Development Server
+
+Run the following command to start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. AWS Credentials
 
-## Learn More
+To use the application, you will need:
 
-To learn more about Next.js, take a look at the following resources:
+- An AWS Access Key ID
+- An AWS Secret Access Key
+- The name of your S3 Bucket
+- The AWS Region where your bucket is located
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Enter these details into the form and click "Save Credentials". They will be stored in your browser's local storage for future use.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. S3 Bucket CORS Configuration
 
-## Deploy on Vercel
+For the client-side upload to work, you must configure your S3 bucket's Cross-Origin Resource Sharing (CORS) policy.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1.  Navigate to your S3 bucket in the AWS Management Console.
+2.  Go to the **Permissions** tab.
+3.  Scroll down to the **Cross-origin resource sharing (CORS)** section and click **Edit**.
+4.  Paste the following JSON configuration into the editor:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["PUT", "POST", "GET", "HEAD"],
+    "AllowedOrigins": ["*"],
+    "ExposeHeaders": []
+  }
+]
+```
+
+> **Note:** For production environments, it is highly recommended to restrict `AllowedOrigins` to your application's domain (e.g., `"https://yourapp.com"`) instead of using `"*"`.
+
+5.  Click **Save changes**.
+
+### 3. Uploading Files
+
+Once your credentials are saved and CORS is configured, you can:
+
+1.  Select a file using the file input.
+2.  Click the "Upload" button.
+3.  Monitor the progress and see the file appear in your upload history upon successful completion.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

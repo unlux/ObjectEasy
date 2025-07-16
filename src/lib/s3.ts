@@ -118,14 +118,18 @@ export function uploadFile(
 
         xhr.send(file);
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         console.error(
           "An error occurred during the presigned URL generation:",
           error
         );
-        reject(
-          new Error(error.message || "An unknown client-side error occurred.")
-        );
+        if (error instanceof Error) {
+          reject(
+            new Error(error.message || "An unknown client-side error occurred.")
+          );
+        } else {
+          reject(new Error("An unknown client-side error occurred."));
+        }
       });
   });
 
@@ -155,7 +159,10 @@ export async function getDownloadUrl(
   try {
     const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
     return { url, error: null };
-  } catch (err: any) {
-    return { url: null, error: `Failed to get URL: ${err.message}` };
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return { url: null, error: `Failed to get URL: ${err.message}` };
+    }
+    return { url: null, error: "Failed to get URL due to an unknown error." };
   }
 }

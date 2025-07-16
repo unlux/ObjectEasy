@@ -34,7 +34,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
         <div className="text-sm">
           <p className="mb-4">
             This tool allows you to upload files directly to your S3 bucket from
-            your browser. All credentials are stored locally in your browser's
+            your browser. All credentials are stored locally in your browser&apos;s
             localStorage and are never sent to any server.
           </p>
           <Accordion type="single" collapsible className="w-full">
@@ -46,17 +46,17 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                 <br />
                 2. Select the AWS Region where your bucket is located.
                 <br />
-                3. Click "Save Credentials" to store them in your browser.
+                3. Click &quot;Save Credentials&quot; to store them in your browser.
                 <br />
-                4. Choose a file and click "Upload".
+                4. Choose a file and click &quot;Upload&quot;.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
               <AccordionTrigger>Troubleshooting</AccordionTrigger>
               <AccordionContent>
                 <p className="font-semibold">CORS Error:</p>
-                If you see a "CORS" error, you need to configure your S3
-                bucket's CORS policy. Go to your S3 bucket settings in the AWS
+                If you see a &quot;CORS&quot; error, you need to configure your S3
+                bucket&apos;s CORS policy. Go to your S3 bucket settings in the AWS
                 Console -&gt; Permissions -&gt; Cross-origin resource sharing
                 (CORS) and add the following configuration:
                 <pre className="mt-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-xs overflow-x-auto">
@@ -95,7 +95,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                     the region where your bucket is located.
                   </li>
                   <li>
-                    <b>System Clock:</b> Your computer's clock must be accurate.
+                    <b>System Clock:</b> Your computer&apos;s clock must be accurate.
                     A time drift of more than 5 minutes can cause this error.
                   </li>
                   <li>
