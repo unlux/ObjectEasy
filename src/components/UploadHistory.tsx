@@ -21,11 +21,15 @@ export function UploadHistory({
   onClearHistory,
 }: UploadHistoryProps) {
   const [error, setError] = useState<string | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const handleGetUrl = async (item: {
-    fileName: string;
-    bucketName: string;
-  }) => {
+  const handleCopyUrl = async (
+    item: {
+      fileName: string;
+      bucketName: string;
+    },
+    index: number
+  ) => {
     setError(null);
     const { url, error: downloadError } = await getDownloadUrl(
       credentials,
@@ -36,7 +40,9 @@ export function UploadHistory({
     if (downloadError) {
       setError(downloadError);
     } else if (url) {
-      window.open(url, "_blank");
+      navigator.clipboard.writeText(url);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
     }
   };
 
@@ -57,9 +63,9 @@ export function UploadHistory({
       <CardContent>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <ul className="space-y-2">
-          {history.map((item) => (
+          {history.map((item, index) => (
             <li
-              key={`${item.bucketName}-${item.fileName}`}
+              key={`${item.bucketName}-${item.fileName}-${index}`}
               className="flex justify-between items-center"
             >
               <span
@@ -71,9 +77,9 @@ export function UploadHistory({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => handleGetUrl(item)}
+                onClick={() => handleCopyUrl(item, index)}
               >
-                Get URL
+                {copiedIndex === index ? "Copied!" : "Copy"}
               </Button>
             </li>
           ))}

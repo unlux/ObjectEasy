@@ -10,6 +10,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
 import { uploadFile } from "@/lib/s3";
@@ -71,6 +78,11 @@ const UploadPage = () => {
       setCredentialsStored(true);
     }
 
+    const hasSeenModal = localStorage.getItem("hasSeenModal");
+    if (!hasSeenModal) {
+      setIsModalOpen(true);
+    }
+
     const storedHistory = localStorage.getItem("uploadHistory");
     if (storedHistory) {
       setUploadHistory(JSON.parse(storedHistory));
@@ -93,40 +105,67 @@ const UploadPage = () => {
     setError(null);
     setSuccess(null);
 
-    const result = await uploadFile(
-      { accessKeyId, secretAccessKey, region },
-      bucketName,
-      file
-    );
+    try {
+      const result = await uploadFile(
+        { accessKeyId, secretAccessKey, region },
+        bucketName,
+        file
+      );
 
-    if (result.success) {
-      setSuccess("File uploaded successfully!");
-      const newHistory = [
-        ...uploadHistory,
-        { fileName: result.sanitizedKey!, bucketName },
-      ];
-      setUploadHistory(newHistory);
-      localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
-    } else {
-      setError(result.error);
+      if (result.success) {
+        setSuccess("File uploaded successfully!");
+        const newHistory = [
+          ...uploadHistory,
+          { fileName: result.sanitizedKey!, bucketName },
+        ];
+        setUploadHistory(newHistory);
+        localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
+      } else {
+        setError(result.error);
+      }
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setUploading(false);
     }
+  };
 
-    setUploading(false);
+  const handleSaveCredentials = () => {
+    if (!accessKeyId || !secretAccessKey || !bucketName || !region) {
+      setError("All credential fields must be filled to save.");
+      return;
+    }
+    localStorage.setItem("accessKeyId", accessKeyId);
+    localStorage.setItem("secretAccessKey", secretAccessKey);
+    localStorage.setItem("bucketName", bucketName);
+    localStorage.setItem("region", region);
+    setCredentialsStored(true);
+    setError(null);
+  };
+
+  const clearCredentials = () => {
+    localStorage.removeItem("accessKeyId");
+    localStorage.removeItem("secretAccessKey");
+    localStorage.removeItem("bucketName");
+    localStorage.removeItem("region");
+    setAccessKeyId("");
+    setSecretAccessKey("");
+    setBucketName("");
+    setRegion("");
+    setCredentialsStored(false);
+  };
+
+  const editCredentials = () => {
+    setCredentialsStored(false);
+  };
+
+  const handleClearHistory = () => {
+    setUploadHistory([]);
+    localStorage.removeItem("uploadHistory");
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setSuccess("Copied to clipboard!");
-  };
-
-  // Re-added handleClearHistory function to resolve the error
-  const handleClearHistory = () => {
-    setUploadHistory([]);
-    localStorage.removeItem("uploadHistory");
   };
 
   return (
@@ -142,8 +181,65 @@ const UploadPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!credentialsStored && (
+            <>
+              <div className="space-y-2">
+                <Label>AWS Access Key ID</Label>
+                <Input
+                  type="text"
+                  value={accessKeyId}
+                  onChange={(e) => setAccessKeyId(e.target.value.trim())}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>AWS Secret Access Key</Label>
+                <Input
+                  type="text"
+                  value={secretAccessKey}
+                  onChange={(e) => setSecretAccessKey(e.target.value.trim())}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>S3 Bucket Name</Label>
+                <Input
+                  value={bucketName}
+                  onChange={(e) => setBucketName(e.target.value.trim())}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>AWS Region</Label>
+                <Select
+                  value={region}
+                  onValueChange={(value) => setRegion(value.trim())}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {awsRegions.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleSaveCredentials} className="w-full">
+                Save Credentials
+              </Button>
+            </>
+          )}
+
           {credentialsStored && (
             <>
+              <div className="flex space-x-2">
+                <Button onClick={editCredentials} variant="outline">
+                  Edit
+                </Button>
+                <Button onClick={clearCredentials} variant="destructive">
+                  Clear
+                </Button>
+              </div>
               <div className="space-y-2">
                 <Label>File</Label>
                 <Input type="file" onChange={handleFileChange} />
@@ -155,14 +251,9 @@ const UploadPage = () => {
               >
                 {uploading ? "Uploading..." : "Upload"}
               </Button>
-              <Button
-                onClick={() => copyToClipboard("Your URL here")}
-                className="w-full"
-              >
-                Copy
-              </Button>
             </>
           )}
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {success && <p className="text-green-500 text-sm">{success}</p>}
         </CardContent>
