@@ -10,13 +10,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
 import { uploadFile } from "@/lib/s3";
@@ -78,11 +71,6 @@ const UploadPage = () => {
       setCredentialsStored(true);
     }
 
-    const hasSeenModal = localStorage.getItem("hasSeenModal");
-    if (!hasSeenModal) {
-      setIsModalOpen(true);
-    }
-
     const storedHistory = localStorage.getItem("uploadHistory");
     if (storedHistory) {
       setUploadHistory(JSON.parse(storedHistory));
@@ -126,43 +114,19 @@ const UploadPage = () => {
     setUploading(false);
   };
 
-  const handleSaveCredentials = () => {
-    if (!accessKeyId || !secretAccessKey || !bucketName || !region) {
-      setError("All credential fields must be filled to save.");
-      return;
-    }
-    localStorage.setItem("accessKeyId", accessKeyId);
-    localStorage.setItem("secretAccessKey", secretAccessKey);
-    localStorage.setItem("bucketName", bucketName);
-    localStorage.setItem("region", region);
-    setCredentialsStored(true);
-    setError(null);
+  const handleModalClose = () => {
+    setIsModalOpen(false);
   };
 
-  const clearCredentials = () => {
-    localStorage.removeItem("accessKeyId");
-    localStorage.removeItem("secretAccessKey");
-    localStorage.removeItem("bucketName");
-    localStorage.removeItem("region");
-    setAccessKeyId("");
-    setSecretAccessKey("");
-    setBucketName("");
-    setRegion("");
-    setCredentialsStored(false);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setSuccess("Copied to clipboard!");
   };
 
-  const editCredentials = () => {
-    setCredentialsStored(false);
-  };
-
+  // Re-added handleClearHistory function to resolve the error
   const handleClearHistory = () => {
     setUploadHistory([]);
     localStorage.removeItem("uploadHistory");
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    localStorage.setItem("hasSeenModal", "true");
   };
 
   return (
@@ -178,62 +142,8 @@ const UploadPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!credentialsStored && (
-            <>
-              <div className="space-y-2">
-                <Label>AWS Access Key ID</Label>
-                <Input
-                  type="password"
-                  value={accessKeyId}
-                  onChange={(e) => setAccessKeyId(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>AWS Secret Access Key</Label>
-                <Input
-                  type="password"
-                  value={secretAccessKey}
-                  onChange={(e) => setSecretAccessKey(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>S3 Bucket Name</Label>
-                <Input
-                  value={bucketName}
-                  onChange={(e) => setBucketName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>AWS Region</Label>
-                <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {awsRegions.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleSaveCredentials} className="w-full">
-                Save Credentials
-              </Button>
-            </>
-          )}
-
           {credentialsStored && (
             <>
-              <div className="flex space-x-2">
-                <Button onClick={editCredentials} variant="outline">
-                  Edit
-                </Button>
-                <Button onClick={clearCredentials} variant="destructive">
-                  Clear
-                </Button>
-              </div>
               <div className="space-y-2">
                 <Label>File</Label>
                 <Input type="file" onChange={handleFileChange} />
@@ -245,9 +155,14 @@ const UploadPage = () => {
               >
                 {uploading ? "Uploading..." : "Upload"}
               </Button>
+              <Button
+                onClick={() => copyToClipboard("Your URL here")}
+                className="w-full"
+              >
+                Copy
+              </Button>
             </>
           )}
-
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {success && <p className="text-green-500 text-sm">{success}</p>}
         </CardContent>
