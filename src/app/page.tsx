@@ -230,16 +230,27 @@ const UploadPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <InfoModal isOpen={isModalOpen} onClose={handleModalClose} />
-      <div className="mb-4">
-        <Image src="/logo.png" alt="ObjectEzy Logo" width={150} height={150} />
-      </div>
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle className="text-2xl">Upload to S3</CardTitle>
-          <CardDescription>
-            {credentialsStored
-              ? "Credentials are saved. You can now upload files."
-              : "Provide your AWS credentials to upload files to your S3 bucket."}
+          <div className="flex items-center justify-center mb-4">
+            <Image
+              src="/logo.png"
+              alt="ObjectEzy Logo"
+              width={50}
+              height={50}
+            />
+            <CardTitle className="text-2xl text-center">ObjectEzy</CardTitle>
+          </div>
+          <CardDescription className="text-center">
+            {credentialsStored ? (
+              <>
+                Credentials saved to Local Storage !
+                <br />
+                You can now upload your files.
+              </>
+            ) : (
+              "Provide your AWS credentials to upload files to your S3 bucket."
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
