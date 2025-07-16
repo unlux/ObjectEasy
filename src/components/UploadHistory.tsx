@@ -79,7 +79,7 @@ export function UploadHistory({
                 size="sm"
                 onClick={() => handleCopyUrl(item, index)}
               >
-                {copiedIndex === index ? "Copied!" : "Copy"}
+                {copiedIndex === index ? "Copied!" : "Copy Link"}
               </Button>
             </li>
           ))}

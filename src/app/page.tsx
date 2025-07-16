@@ -21,6 +21,7 @@ import {
 import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
 import { uploadFile } from "@/lib/s3";
+import { Progress } from "@/components/ui/progress";
 
 const awsRegions = [
   "af-south-1",
@@ -61,6 +62,9 @@ const UploadPage = () => {
   const [region, setRegion] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSpeed, setUploadSpeed] = useState(0);
+  const [xhr, setXhr] = useState<XMLHttpRequest | null>(null);
   const [feedback, setFeedback] = useState<{
     message: string;
     type: "success" | "error";
@@ -129,13 +133,23 @@ const UploadPage = () => {
 
     setUploading(true);
     setFeedback(null);
+    setUploadProgress(0);
+    setUploadSpeed(0);
 
     try {
-      const result = await uploadFile(
+      const { promise, abort } = uploadFile(
         { accessKeyId, secretAccessKey, region },
         bucketName,
-        file
+        file,
+        (progress, speed) => {
+          setUploadProgress(progress);
+          setUploadSpeed(speed);
+        }
       );
+
+      setXhr({ abort } as any); // Store the abort function
+
+      const result = await promise;
 
       if (result.success) {
         setFeedback({
@@ -150,15 +164,18 @@ const UploadPage = () => {
         localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
       } else {
         const errorMessage =
-          result.error || "An unknown error occurred during upload.";
+          (result as any).error || "An unknown error occurred during upload.";
         setFeedback({ message: errorMessage, type: "error" });
         throw new Error(errorMessage);
       }
     } catch (error: any) {
-      setFeedback({ message: error.message, type: "error" });
+      if (error.name !== "AbortError") {
+        setFeedback({ message: error.message || error.error, type: "error" });
+      }
       throw error;
     } finally {
       setUploading(false);
+      setXhr(null);
     }
   };
 
@@ -193,6 +210,14 @@ const UploadPage = () => {
   const editCredentials = () => {
     setCredentialsStored(false);
     setFeedback(null);
+  };
+
+  const handleCancelUpload = () => {
+    if (xhr) {
+      xhr.abort();
+      setUploading(false);
+      setFeedback({ message: "Upload cancelled.", type: "error" });
+    }
   };
 
   const handleClearHistory = () => {
@@ -273,7 +298,7 @@ const UploadPage = () => {
                   Edit Credentials
                 </Button>
                 <Button onClick={clearCredentials} variant="destructive">
-                  Clear Credentials
+                  Clear
                 </Button>
               </div>
               <div className="space-y-2 pt-2">
@@ -322,6 +347,39 @@ const UploadPage = () => {
                   </label>
                 </div>
               </div>
+              {uploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <Label>Upload Progress</Label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {(uploadSpeed / 1024 / 1024).toFixed(2)} MB/s
+                      </span>
+                      <button
+                        onClick={handleCancelUpload}
+                        className="p-0.5 rounded-full bg-gray-300 hover:bg-gray-400 text-gray-600 hover:text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-300"
+                        aria-label="Cancel upload"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3 w-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <Progress value={uploadProgress} />
+                </div>
+              )}
               <StatefulButton
                 onClick={handleUpload}
                 disabled={uploading || !file}
