@@ -3,15 +3,21 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { motion, AnimatePresence, useAnimate } from "motion/react";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   className?: string;
   children: React.ReactNode;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
 }
 
 export const Button = ({ className, children, ...props }: ButtonProps) => {
   const [scope, animate] = useAnimate();
+  const [status, setStatus] = React.useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
 
   const animateLoading = async () => {
+    setStatus("loading");
     await animate(
       ".loader",
       {
@@ -61,6 +67,7 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
         duration: 0.2,
       }
     );
+    setStatus("idle");
   };
 
   const animateError = async () => {
@@ -99,14 +106,21 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
         duration: 0.2,
       }
     );
+    setStatus("idle");
   };
 
   const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (status !== "idle") {
+      return;
+    }
     await animateLoading();
     try {
       await props.onClick?.(event);
+      setStatus("success");
       await animateSuccess();
     } catch (e) {
+      console.error("Button click failed:", e);
+      setStatus("error");
       await animateError();
     }
   };
@@ -127,7 +141,15 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
       layoutId="button"
       ref={scope}
       className={cn(
-        "flex min-w-[120px] cursor-pointer items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2 font-medium text-white ring-offset-2 transition duration-200 hover:ring-2 hover:ring-green-500 dark:ring-offset-black",
+        "flex min-w-[120px] cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 font-medium text-white ring-offset-2 transition duration-200",
+        {
+          "bg-gray-500 hover:ring-2 hover:ring-gray-500 dark:ring-offset-black":
+            status === "idle" || status === "loading",
+          "bg-green-500 hover:ring-2 hover:ring-green-500 dark:ring-offset-black":
+            status === "success",
+          "bg-red-500 hover:ring-2 hover:ring-red-500 dark:ring-offset-black":
+            status === "error",
+        },
         className
       )}
       {...buttonProps}

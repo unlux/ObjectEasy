@@ -98,46 +98,45 @@ const UploadPage = () => {
     }
   };
 
-  const handleUpload = () => {
-    return new Promise(async (resolve, reject) => {
-      if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
-        setFeedback({ message: "All fields are required.", type: "error" });
-        return reject(new Error("All fields are required."));
+  const handleUpload = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ): Promise<void> => {
+    if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
+      setFeedback({ message: "All fields are required.", type: "error" });
+      throw new Error("All fields are required.");
+    }
+
+    setUploading(true);
+    setFeedback(null);
+
+    try {
+      const result = await uploadFile(
+        { accessKeyId, secretAccessKey, region },
+        bucketName,
+        file
+      );
+
+      if (result.success) {
+        setFeedback({
+          message: "File uploaded successfully!",
+          type: "success",
+        });
+        const newHistory = [
+          ...uploadHistory,
+          { fileName: result.sanitizedKey!, bucketName },
+        ];
+        setUploadHistory(newHistory);
+        localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
+      } else {
+        setFeedback({ message: result.error, type: "error" });
+        throw new Error(result.error);
       }
-
-      setUploading(true);
-      setFeedback(null);
-
-      try {
-        const result = await uploadFile(
-          { accessKeyId, secretAccessKey, region },
-          bucketName,
-          file
-        );
-
-        if (result.success) {
-          setFeedback({
-            message: "File uploaded successfully!",
-            type: "success",
-          });
-          const newHistory = [
-            ...uploadHistory,
-            { fileName: result.sanitizedKey!, bucketName },
-          ];
-          setUploadHistory(newHistory);
-          localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
-          resolve(result);
-        } else {
-          setFeedback({ message: result.error, type: "error" });
-          reject(new Error(result.error));
-        }
-      } catch (error: any) {
-        setFeedback({ message: error.message, type: "error" });
-        reject(error);
-      } finally {
-        setUploading(false);
-      }
-    });
+    } catch (error: any) {
+      setFeedback({ message: error.message, type: "error" });
+      throw error;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSaveCredentials = () => {
@@ -170,6 +169,7 @@ const UploadPage = () => {
 
   const editCredentials = () => {
     setCredentialsStored(false);
+    setFeedback(null);
   };
 
   const handleClearHistory = () => {
