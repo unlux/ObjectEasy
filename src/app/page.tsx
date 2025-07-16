@@ -45,6 +45,15 @@ const awsRegions = [
   "us-west-2",
 ].sort((a, b) => a.localeCompare(b));
 
+function formatFileSize(bytes: number, decimals = 2) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
 const UploadPage = () => {
   const [accessKeyId, setAccessKeyId] = useState("");
   const [secretAccessKey, setSecretAccessKey] = useState("");
@@ -128,8 +137,10 @@ const UploadPage = () => {
         setUploadHistory(newHistory);
         localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
       } else {
-        setFeedback({ message: result.error, type: "error" });
-        throw new Error(result.error);
+        const errorMessage =
+          result.error || "An unknown error occurred during upload.";
+        setFeedback({ message: errorMessage, type: "error" });
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       setFeedback({ message: error.message, type: "error" });
@@ -254,12 +265,32 @@ const UploadPage = () => {
                 </Button>
               </div>
               <div className="space-y-2">
-                <Label>File</Label>
-                <Input type="file" onChange={handleFileChange} />
+                <Label htmlFor="file-upload">File</Label>
+                <div className="relative">
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="flex items-center justify-between w-full h-10 px-3 py-2 text-sm border rounded-md cursor-pointer border-input bg-background ring-offset-background"
+                  >
+                    <span className="truncate">
+                      {file ? file.name : "Select a file"}
+                    </span>
+                    {file && (
+                      <span className="ml-2 flex-shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                        {formatFileSize(file.size)}
+                      </span>
+                    )}
+                  </label>
+                </div>
               </div>
               <StatefulButton
                 onClick={handleUpload}
-                disabled={uploading}
+                disabled={uploading || !file}
                 className="w-full"
               >
                 {uploading ? "Uploading..." : "Upload"}
