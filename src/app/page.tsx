@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -229,6 +230,9 @@ const UploadPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <InfoModal isOpen={isModalOpen} onClose={handleModalClose} />
+      <div className="mb-4">
+        <Image src="/logo.png" alt="ObjectEzy Logo" width={150} height={150} />
+      </div>
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="text-2xl">Upload to S3</CardTitle>
