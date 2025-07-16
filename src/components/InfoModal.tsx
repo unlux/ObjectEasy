@@ -26,7 +26,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Welcome to ObjectEzy!</AlertDialogTitle>
+          <AlertDialogTitle>Welcome to ObjectEasy!</AlertDialogTitle>
           <AlertDialogDescription>
             A simple, client-side S3 file uploader.
           </AlertDialogDescription>
@@ -34,8 +34,8 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
         <div className="text-sm">
           <p className="mb-4">
             This tool allows you to upload files directly to your S3 bucket from
-            your browser. All credentials are stored locally in your browser&apos;s
-            localStorage and are never sent to any server.
+            your browser. All credentials are stored locally in your
+            browser&apos;s localStorage and are never sent to any server.
           </p>
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
@@ -46,7 +46,8 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                 <br />
                 2. Select the AWS Region where your bucket is located.
                 <br />
-                3. Click &quot;Save Credentials&quot; to store them in your browser.
+                3. Click &quot;Save Credentials&quot; to store them in your
+                browser.
                 <br />
                 4. Choose a file and click &quot;Upload&quot;.
               </AccordionContent>
@@ -55,10 +56,10 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
               <AccordionTrigger>Troubleshooting</AccordionTrigger>
               <AccordionContent>
                 <p className="font-semibold">CORS Error:</p>
-                If you see a &quot;CORS&quot; error, you need to configure your S3
-                bucket&apos;s CORS policy. Go to your S3 bucket settings in the AWS
-                Console -&gt; Permissions -&gt; Cross-origin resource sharing
-                (CORS) and add the following configuration:
+                If you see a &quot;CORS&quot; error, you need to configure your
+                S3 bucket&apos;s CORS policy. Go to your S3 bucket settings in
+                the AWS Console -&gt; Permissions -&gt; Cross-origin resource
+                sharing (CORS) and add the following configuration:
                 <pre className="mt-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-xs overflow-x-auto">
                   {`[
   {
@@ -95,8 +96,9 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                     the region where your bucket is located.
                   </li>
                   <li>
-                    <b>System Clock:</b> Your computer&apos;s clock must be accurate.
-                    A time drift of more than 5 minutes can cause this error.
+                    <b>System Clock:</b> Your computer&apos;s clock must be
+                    accurate. A time drift of more than 5 minutes can cause this
+                    error.
                   </li>
                   <li>
                     <b>Special Characters in Filenames:</b> Filenames with

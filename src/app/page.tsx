@@ -171,7 +171,10 @@ const UploadPage = () => {
           throw error;
         }
       } else {
-        setFeedback({ message: "An unexpected error occurred.", type: "error" });
+        setFeedback({
+          message: "An unexpected error occurred.",
+          type: "error",
+        });
         throw error;
       }
     } finally {
@@ -238,11 +241,11 @@ const UploadPage = () => {
           <div className="flex items-center justify-center mb-4">
             <Image
               src="/logo.png"
-              alt="ObjectEzy Logo"
+              alt="ObjectEasy Logo"
               width={50}
               height={50}
             />
-            <CardTitle className="text-2xl text-center">ObjectEzy</CardTitle>
+            <CardTitle className="text-2xl text-center">ObjectEasy</CardTitle>
           </div>
           <CardDescription className="text-center">
             {credentialsStored ? (

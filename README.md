@@ -1,8 +1,8 @@
-# ObjectEzy
+# ObjectEasy
 
-![ObjectEzy Logo](./public/logo.png)
+![ObjectEasy Logo](./public/logo.png)
 
-ObjectEzy is a simple, secure, client-side file uploader for Amazon S3. It allows you to upload files directly to your S3 bucket from your browser without any server-side processing. Your AWS credentials are stored securely in your browser's local storage and are never transmitted to any server other than AWS.
+ObjectEasy is a simple, secure, client-side file uploader for Amazon S3. It allows you to upload files directly to your S3 bucket from your browser without any server-side processing. Your AWS credentials are stored securely in your browser's local storage and are never transmitted to any server other than AWS.
 
 ## Features
 
@@ -35,8 +35,8 @@ ObjectEzy is a simple, secure, client-side file uploader for Amazon S3. It allow
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/your-username/objectezy.git
-    cd objectezy
+    git clone https://github.com/your-username/objecteasy.git
+    cd objecteasy
     ```
 
 2.  Install dependencies:
