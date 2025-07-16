@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   Card,
   CardContent,
@@ -21,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
+import { uploadFile } from "@/lib/s3";
 
 const awsRegions = [
   "af-south-1",
@@ -106,56 +105,25 @@ const UploadPage = () => {
     setError(null);
     setSuccess(null);
 
-    try {
-      const s3Client = new S3Client({
-        region,
-        credentials: {
-          accessKeyId,
-          secretAccessKey,
-        },
-      });
+    const result = await uploadFile(
+      { accessKeyId, secretAccessKey, region },
+      bucketName,
+      file
+    );
 
-      const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: file.name,
-      });
-
-      const presignedUrl = await getSignedUrl(s3Client, command, {
-        expiresIn: 3600,
-      });
-
-      await fetch(presignedUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
+    if (result.success) {
       setSuccess("File uploaded successfully!");
-      localStorage.setItem("accessKeyId", accessKeyId);
-      localStorage.setItem("secretAccessKey", secretAccessKey);
-      localStorage.setItem("bucketName", bucketName);
-      localStorage.setItem("region", region);
-      setCredentialsStored(true);
-
       const newHistory = [
         ...uploadHistory,
-        { fileName: file.name, bucketName },
+        { fileName: result.sanitizedKey!, bucketName },
       ];
       setUploadHistory(newHistory);
       localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
-    } catch (err: any) {
-      if (err.message === "Failed to fetch") {
-        setError(
-          "CORS Error: Please ensure your S3 bucket has the correct CORS configuration to allow PUT requests from this origin."
-        );
-      } else {
-        setError(`An error occurred: ${err.message}`);
-      }
-    } finally {
-      setUploading(false);
+    } else {
+      setError(result.error);
     }
+
+    setUploading(false);
   };
 
   const handleSaveCredentials = () => {

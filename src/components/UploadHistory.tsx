@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDownloadUrl } from "@/lib/s3";
 
 interface UploadHistoryProps {
   readonly history: readonly { fileName: string; bucketName: string }[];
@@ -28,33 +27,16 @@ export function UploadHistory({
     bucketName: string;
   }) => {
     setError(null);
-    if (
-      !credentials.accessKeyId ||
-      !credentials.secretAccessKey ||
-      !credentials.region
-    ) {
-      setError("Credentials are not set.");
-      return;
-    }
+    const { url, error: downloadError } = await getDownloadUrl(
+      credentials,
+      item.bucketName,
+      item.fileName
+    );
 
-    try {
-      const s3Client = new S3Client({
-        region: credentials.region,
-        credentials: {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        },
-      });
-
-      const command = new GetObjectCommand({
-        Bucket: item.bucketName,
-        Key: item.fileName,
-      });
-
-      const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    if (downloadError) {
+      setError(downloadError);
+    } else if (url) {
       window.open(url, "_blank");
-    } catch (err: any) {
-      setError(`Failed to get URL: ${err.message}`);
     }
   };
 

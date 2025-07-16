@@ -78,10 +78,32 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
   }
 ]`}
                 </pre>
-                <p className="mt-4 font-semibold">Invalid Credentials:</p>
-                Ensure your Access Key ID and Secret Access Key are correct and
-                have the necessary permissions (e.g., `s3:PutObject`) for the
-                bucket.
+                <p className="mt-4 font-semibold">
+                  SignatureDoesNotMatch Error:
+                </p>
+                This is a common error with many causes. Please check the
+                following:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>
+                    <b>Invalid Credentials:</b> Ensure your Access Key ID and
+                    Secret Access Key are correct and have the necessary
+                    permissions (e.g., `s3:PutObject`, `s3:GetObject`) for the
+                    bucket.
+                  </li>
+                  <li>
+                    <b>Correct Region:</b> The AWS Region selected must match
+                    the region where your bucket is located.
+                  </li>
+                  <li>
+                    <b>System Clock:</b> Your computer's clock must be accurate.
+                    A time drift of more than 5 minutes can cause this error.
+                  </li>
+                  <li>
+                    <b>Special Characters in Filenames:</b> Filenames with
+                    special characters can sometimes cause issues. Try a simple
+                    filename if you encounter problems.
+                  </li>
+                </ul>
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
