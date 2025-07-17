@@ -1,6 +1,6 @@
 # ObjectEasy
 
-![ObjectEasy Logo](./public/logo.png)
+<img src="./public/logo.png" alt="ObjectEasy Logo" width="80" />
 
 ObjectEasy is a simple, secure, client-side file uploader for Amazon S3. It allows you to upload files directly to your S3 bucket from your browser without any server-side processing. Your AWS credentials are stored securely in your browser's local storage and are never transmitted to any server other than AWS.
 
@@ -35,17 +35,13 @@ ObjectEasy is a simple, secure, client-side file uploader for Amazon S3. It allo
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/your-username/objecteasy.git
+    git clone https://github.com/unlux/objecteasy.git
     cd objecteasy
     ```
 
 2.  Install dependencies:
     ```bash
-    npm install
-    # or
-    yarn install
-    # or
-    pnpm install
+    bun install
     ```
 
 ### Running the Development Server
@@ -84,16 +80,16 @@ For the client-side upload to work, you must configure your S3 bucket's Cross-Or
 [
   {
     "AllowedHeaders": ["*"],
-    "AllowedMethods": ["PUT", "POST", "GET", "HEAD"],
-    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["PUT", "GET"],
+    "AllowedOrigins": [
+      "http://localhost:3000",
+      "https://objecteasy.unlux.dev/*",
+      "*"
+    ],
     "ExposeHeaders": []
   }
 ]
 ```
-
-> **Note:** For production environments, it is highly recommended to restrict `AllowedOrigins` to your application's domain (e.g., `"https://yourapp.com"`) instead of using `"*"`.
-
-5.  Click **Save changes**.
 
 ### 3. Uploading Files
 
@@ -102,7 +98,3 @@ Once your credentials are saved and CORS is configured, you can:
 1.  Select a file using the file input.
 2.  Click the "Upload" button.
 3.  Monitor the progress and see the file appear in your upload history upon successful completion.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

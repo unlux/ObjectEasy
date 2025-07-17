@@ -52,8 +52,8 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                 4. Choose a file and click &quot;Upload&quot;.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>Troubleshooting</AccordionTrigger>
+            <AccordionItem value="item-cors">
+              <AccordionTrigger>CORS Error</AccordionTrigger>
               <AccordionContent>
                 <p className="font-semibold">CORS Error:</p>
                 If you see a &quot;CORS&quot; error, you need to configure your
@@ -68,28 +68,34 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
     ],
     "AllowedMethods": [
       "PUT",
-      "POST",
       "GET",
-      "HEAD"
     ],
     "AllowedOrigins": [
-      "*"
+      "http://localhost:3000",
+      "https://objecteasy.unlux.dev"
     ],
     "ExposeHeaders": []
   }
 ]`}
                 </pre>
-                <p className="mt-4 font-semibold">
-                  SignatureDoesNotMatch Error:
-                </p>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block mt-2">
+                  For production, restrict <code>AllowedOrigins</code> to your
+                  domain.
+                </span>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-signature">
+              <AccordionTrigger>SignatureDoesNotMatch Error</AccordionTrigger>
+              <AccordionContent>
+                <p className="font-semibold">SignatureDoesNotMatch Error:</p>
                 This is a common error with many causes. Please check the
                 following:
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>
                     <b>Invalid Credentials:</b> Ensure your Access Key ID and
                     Secret Access Key are correct and have the necessary
-                    permissions (e.g., `s3:PutObject`, `s3:GetObject`) for the
-                    bucket.
+                    permissions (e.g., <code>s3:PutObject</code>,{" "}
+                    <code>s3:GetObject</code>) for the bucket.
                   </li>
                   <li>
                     <b>Correct Region:</b> The AWS Region selected must match
