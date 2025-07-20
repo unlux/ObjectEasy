@@ -368,8 +368,30 @@ const UploadPage = () => {
                   </label>
                 </div>
               </div>
+              <StatefulButton
+                onClick={() => handleUpload()}
+                disabled={
+                  !file ||
+                  !accessKeyId ||
+                  !secretAccessKey ||
+                  !bucketName ||
+                  !region
+                }
+                className={cn(
+                  "w-full",
+                  uploadStatus === "error" && "bg-red-500 hover:ring-red-500",
+                  uploadStatus === "success" &&
+                    "bg-green-600 hover:ring-green-600",
+                  uploadStatus === "uploading" &&
+                    "bg-green-500 hover:ring-green-500",
+                  uploadStatus === "idle" && "bg-green-500 hover:ring-green-500"
+                )}
+              >
+                Upload to S3
+              </StatefulButton>
+
               {uploadStatus === "uploading" && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-4">
                   <div className="flex justify-between items-center">
                     <Label>Upload Progress</Label>
                     <div className="flex items-center space-x-2">
@@ -401,27 +423,6 @@ const UploadPage = () => {
                   <Progress value={uploadProgress} />
                 </div>
               )}
-              <StatefulButton
-                onClick={() => handleUpload()}
-                disabled={
-                  !file ||
-                  !accessKeyId ||
-                  !secretAccessKey ||
-                  !bucketName ||
-                  !region
-                }
-                className={cn(
-                  "w-full",
-                  uploadStatus === "error" && "bg-red-500 hover:ring-red-500",
-                  uploadStatus === "success" &&
-                    "bg-green-600 hover:ring-green-600",
-                  uploadStatus === "uploading" &&
-                    "bg-green-500 hover:ring-green-500",
-                  uploadStatus === "idle" && "bg-green-500 hover:ring-green-500"
-                )}
-              >
-                Upload to S3
-              </StatefulButton>
             </>
           )}
         </CardContent>
