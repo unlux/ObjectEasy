@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import {
   Card,
   CardContent,
@@ -62,14 +63,12 @@ const UploadPage = () => {
   const [bucketName, setBucketName] = useState("");
   const [region, setRegion] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [xhr, setXhr] = useState<{ abort: () => void } | null>(null);
-  const [feedback, setFeedback] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
   const [credentialsStored, setCredentialsStored] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<
@@ -123,12 +122,12 @@ const UploadPage = () => {
 
   const handleUpload = async (): Promise<void> => {
     if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
-      setFeedback({ message: "All fields are required.", type: "error" });
+      toast.error("All fields are required.");
       throw new Error("All fields are required.");
     }
 
-    setUploading(true);
-    setFeedback(null);
+    // Update our app state to show progress
+    setUploadStatus("uploading");
     setUploadProgress(0);
     setUploadSpeed(0);
 
@@ -148,10 +147,8 @@ const UploadPage = () => {
       const result: UploadResult = await promise;
 
       if (result.success) {
-        setFeedback({
-          message: "File uploaded successfully!",
-          type: "success",
-        });
+        setUploadStatus("success");
+        toast.success("File uploaded successfully!");
         const newHistory = [
           ...uploadHistory,
           { fileName: result.sanitizedKey!, bucketName },
@@ -159,36 +156,34 @@ const UploadPage = () => {
         setUploadHistory(newHistory);
         localStorage.setItem("uploadHistory", JSON.stringify(newHistory));
       } else {
+        setUploadStatus("error");
         const errorMessage =
           result.error || "An unknown error occurred during upload.";
-        setFeedback({ message: errorMessage, type: "error" });
+        toast.error(errorMessage);
         throw new Error(errorMessage);
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.name !== "AbortError") {
-          setFeedback({ message: error.message, type: "error" });
+          setUploadStatus("error");
+          toast.error(error.message);
           throw error;
         }
       } else {
-        setFeedback({
-          message: "An unexpected error occurred.",
-          type: "error",
-        });
+        setUploadStatus("error");
+        toast.error("An unexpected error occurred.");
         throw error;
       }
     } finally {
-      setUploading(false);
+      // Reset the XHR reference
       setXhr(null);
+      // The stateful button will handle its own state transitions
     }
   };
 
   const handleSaveCredentials = () => {
     if (!accessKeyId || !secretAccessKey || !bucketName || !region) {
-      setFeedback({
-        message: "All credential fields must be filled to save.",
-        type: "error",
-      });
+      toast.error("All credential fields must be filled to save.");
       return;
     }
     localStorage.setItem("accessKeyId", accessKeyId);
@@ -196,7 +191,7 @@ const UploadPage = () => {
     localStorage.setItem("bucketName", bucketName);
     localStorage.setItem("region", region);
     setCredentialsStored(true);
-    setFeedback(null);
+    toast.success("Credentials saved successfully!");
   };
 
   const clearCredentials = () => {
@@ -213,14 +208,15 @@ const UploadPage = () => {
 
   const editCredentials = () => {
     setCredentialsStored(false);
-    setFeedback(null);
   };
 
   const handleCancelUpload = () => {
     if (xhr) {
       xhr.abort();
-      setUploading(false);
-      setFeedback({ message: "Upload cancelled.", type: "error" });
+      setUploadStatus("idle");
+      setUploadProgress(0);
+      setXhr(null);
+      toast.error("Upload cancelled.");
     }
   };
 
@@ -250,7 +246,7 @@ const UploadPage = () => {
           <CardDescription className="text-center">
             {credentialsStored ? (
               <>
-                Credentials saved to Local Storage !
+                Credentials saved to Local Storage!
                 <br />
                 You can now upload your files.
               </>
@@ -365,7 +361,7 @@ const UploadPage = () => {
                   </label>
                 </div>
               </div>
-              {uploading && (
+              {uploadStatus === "uploading" && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label>Upload Progress</Label>
@@ -399,23 +395,19 @@ const UploadPage = () => {
                 </div>
               )}
               <StatefulButton
-                onClick={handleUpload}
-                disabled={uploading || !file}
+                onClick={() => handleUpload()}
+                disabled={
+                  !file ||
+                  !accessKeyId ||
+                  !secretAccessKey ||
+                  !bucketName ||
+                  !region
+                }
                 className="w-full"
               >
-                {uploading ? "Uploading..." : "Upload"}
+                Upload to S3
               </StatefulButton>
             </>
-          )}
-
-          {feedback && (
-            <p
-              className={`text-sm text-center ${
-                feedback.type === "success" ? "text-green-500" : "text-red-500"
-              }`}
-            >
-              {feedback.message}
-            </p>
           )}
         </CardContent>
       </Card>

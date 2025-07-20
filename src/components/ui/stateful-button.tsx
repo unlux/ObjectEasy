@@ -1,25 +1,18 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { motion, useAnimate, HTMLMotionProps } from "motion/react";
+import { motion, AnimatePresence, useAnimate } from "motion/react";
 
-type MotionButtonProps = Omit<
-  HTMLMotionProps<"button">,
-  "onClick" | "onDrag" | "onDragStart" | "onDragEnd"
->;
-
-interface ButtonProps extends MotionButtonProps {
+interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   className?: string;
   children: React.ReactNode;
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => Promise<void>;
+  onClick?: (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => void | Promise<void> | Promise<any>;
 }
 
-export const Button = ({
-  className,
-  children,
-  onClick: propsOnClick,
-  ...props
-}: ButtonProps) => {
+export const Button = ({ className, children, ...props }: ButtonProps) => {
   const [scope, animate] = useAnimate();
   const [status, setStatus] = React.useState<
     "idle" | "loading" | "success" | "error"
@@ -27,6 +20,34 @@ export const Button = ({
 
   const animateLoading = async () => {
     setStatus("loading");
+
+    // First ensure other icons are hidden
+    await Promise.all([
+      animate(
+        ".check",
+        {
+          width: "0px",
+          scale: 0,
+          display: "none",
+        },
+        {
+          duration: 0.1,
+        }
+      ),
+      animate(
+        ".error",
+        {
+          width: "0px",
+          scale: 0,
+          display: "none",
+        },
+        {
+          duration: 0.1,
+        }
+      ),
+    ]);
+
+    // Then show the loader with a smooth animation
     await animate(
       ".loader",
       {
@@ -35,12 +56,14 @@ export const Button = ({
         display: "block",
       },
       {
-        duration: 0.2,
+        duration: 0.3, // Slightly longer for smoother appearance
+        ease: "easeInOut",
       }
     );
   };
 
   const animateSuccess = async () => {
+    setStatus("success");
     await animate(
       ".loader",
       {
@@ -72,14 +95,16 @@ export const Button = ({
         display: "none",
       },
       {
-        delay: 2,
+        delay: 1.5, // Slightly shorter delay for better UX
         duration: 0.2,
       }
     );
+
     setStatus("idle");
   };
 
   const animateError = async () => {
+    setStatus("error");
     await animate(
       ".loader",
       {
@@ -115,24 +140,40 @@ export const Button = ({
         duration: 0.2,
       }
     );
+
     setStatus("idle");
   };
 
   const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (status !== "idle") {
-      return;
-    }
+    if (props.disabled) return;
+
+    // The animateLoading function already sets the status to loading
     await animateLoading();
+
     try {
-      await propsOnClick?.(event);
-      setStatus("success");
+      if (props.onClick) {
+        const result = props.onClick(event);
+        // Check if the onClick handler returns a promise
+        if (result instanceof Promise) {
+          await result;
+        }
+      }
       await animateSuccess();
-    } catch (e) {
-      console.error("Button click failed:", e);
-      setStatus("error");
+    } catch (error) {
+      console.error("Button click error:", error);
       await animateError();
     }
   };
+
+  const {
+    onClick,
+    onDrag,
+    onDragStart,
+    onDragEnd,
+    onAnimationStart,
+    onAnimationEnd,
+    ...buttonProps
+  } = props;
 
   return (
     <motion.button
@@ -140,18 +181,17 @@ export const Button = ({
       layoutId="button"
       ref={scope}
       className={cn(
-        "flex min-w-[120px] cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 font-medium text-white ring-offset-2 transition duration-200",
-        {
-          "bg-gray-500 hover:ring-2 hover:ring-gray-500 dark:ring-offset-black":
-            status === "idle" || status === "loading",
-          "bg-green-500 hover:ring-2 hover:ring-green-500 dark:ring-offset-black":
-            status === "success",
-          "bg-red-500 hover:ring-2 hover:ring-red-500 dark:ring-offset-black":
-            status === "error",
-        },
+        "flex min-w-[120px] cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 font-medium text-white ring-offset-2 transition duration-200 hover:ring-2 dark:ring-offset-black",
+        status === "idle" && "bg-green-500 hover:ring-green-500",
+        status === "loading" && "bg-green-500 hover:ring-green-500", // Keep green during loading
+        status === "success" && "bg-green-500 hover:ring-green-500",
+        status === "error" && "bg-red-500 hover:ring-red-500", // Only change to red on error
+        buttonProps.disabled && "opacity-70 cursor-not-allowed",
         className
       )}
-      {...props}
+      disabled={status === "loading" || buttonProps.disabled}
+      type={buttonProps.type || "button"} // Ensure type prop is handled
+      {...buttonProps}
       onClick={handleClick}
     >
       <motion.div layout className="flex items-center gap-2">
@@ -256,7 +296,8 @@ const ErrorIcon = () => {
     >
       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
       <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-      <path d="M10 10l4 4m0 -4l-4 4" />
+      <path d="M12 9v4" />
+      <path d="M12 16v.01" />
     </motion.svg>
   );
 };
