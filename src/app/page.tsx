@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button as StatefulButton } from "@/components/ui/stateful-button";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -121,10 +120,15 @@ const UploadPage = () => {
     }
   };
 
-  const handleUpload = async (): Promise<void> => {
+  const handleUpload = async () => {
+    // Prevent multiple uploads
+    if (uploadStatus === "uploading") {
+      return;
+    }
+
     if (!file || !accessKeyId || !secretAccessKey || !bucketName || !region) {
       toast.error("All fields are required.");
-      throw new Error("All fields are required.");
+      return;
     }
 
     // Update our app state to show progress
@@ -161,24 +165,42 @@ const UploadPage = () => {
         const errorMessage =
           result.error || "An unknown error occurred during upload.";
         toast.error(errorMessage);
-        throw new Error(errorMessage);
+
+        // Reset to idle state after 5 seconds
+        setTimeout(() => {
+          setUploadStatus("idle");
+        }, 5000);
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.name !== "AbortError") {
           setUploadStatus("error");
           toast.error(error.message);
-          throw error;
+
+          // Reset to idle state after 5 seconds
+          setTimeout(() => {
+            setUploadStatus("idle");
+          }, 5000);
         }
       } else {
         setUploadStatus("error");
         toast.error("An unexpected error occurred.");
-        throw error;
+
+        // Reset to idle state after 5 seconds
+        setTimeout(() => {
+          setUploadStatus("idle");
+        }, 5000);
       }
     } finally {
       // Reset the XHR reference
       setXhr(null);
-      // The stateful button will handle its own state transitions
+
+      // For success case, reset to idle after 5 seconds
+      if (uploadStatus === "success") {
+        setTimeout(() => {
+          setUploadStatus("idle");
+        }, 5000);
+      }
     }
   };
 
@@ -220,10 +242,10 @@ const UploadPage = () => {
       setXhr(null);
       toast.error("Upload cancelled.");
 
-      // Reset the status to idle after a longer delay to ensure the user sees the error state
+      // Reset the status to idle after 5 seconds
       setTimeout(() => {
         setUploadStatus("idle");
-      }, 3000);
+      }, 5000);
     }
   };
 
@@ -368,27 +390,31 @@ const UploadPage = () => {
                   </label>
                 </div>
               </div>
-              <StatefulButton
-                onClick={() => handleUpload()}
+              <Button
+                onClick={handleUpload}
                 disabled={
                   !file ||
                   !accessKeyId ||
                   !secretAccessKey ||
                   !bucketName ||
-                  !region
+                  !region ||
+                  uploadStatus === "uploading"
                 }
                 className={cn(
                   "w-full",
-                  uploadStatus === "error" && "bg-red-500 hover:ring-red-500",
-                  uploadStatus === "success" &&
-                    "bg-green-600 hover:ring-green-600",
+                  uploadStatus === "idle" && "bg-green-500 hover:bg-green-600",
                   uploadStatus === "uploading" &&
-                    "bg-green-500 hover:ring-green-500",
-                  uploadStatus === "idle" && "bg-green-500 hover:ring-green-500"
+                    "bg-blue-500 opacity-80 cursor-not-allowed",
+                  uploadStatus === "error" && "bg-red-500 hover:bg-red-600",
+                  uploadStatus === "success" &&
+                    "bg-green-600 hover:bg-green-700"
                 )}
               >
-                Upload to S3
-              </StatefulButton>
+                {uploadStatus === "idle" && "Upload to S3"}
+                {uploadStatus === "uploading" && "Uploading..."}
+                {uploadStatus === "error" && "Upload Failed"}
+                {uploadStatus === "success" && "Upload Successful"}
+              </Button>
 
               {uploadStatus === "uploading" && (
                 <div className="space-y-2 mt-4">
