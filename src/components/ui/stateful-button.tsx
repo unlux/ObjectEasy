@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import React from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence, useAnimate } from "motion/react";
 
 interface ButtonProps
@@ -10,16 +10,38 @@ interface ButtonProps
   onClick?: (
     event: React.MouseEvent<HTMLButtonElement>
   ) => void | Promise<void> | Promise<any>;
+  status?: "idle" | "loading" | "success" | "error";
 }
 
-export const Button = ({ className, children, ...props }: ButtonProps) => {
+export const Button = ({
+  className,
+  children,
+  status: externalStatus,
+  ...props
+}: ButtonProps) => {
   const [scope, animate] = useAnimate();
-  const [status, setStatus] = React.useState<
+  const [internalStatus, setInternalStatus] = React.useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
 
+  // Use external status if provided, otherwise use internal status
+  const status = externalStatus || internalStatus;
+
+  // React to external status changes
+  useEffect(() => {
+    if (externalStatus) {
+      if (externalStatus === "error") {
+        animateError();
+      } else if (externalStatus === "success") {
+        animateSuccess();
+      } else if (externalStatus === "loading") {
+        animateLoading();
+      }
+    }
+  }, [externalStatus]);
+
   const animateLoading = async () => {
-    setStatus("loading");
+    setInternalStatus("loading");
 
     // First ensure other icons are hidden
     await Promise.all([
@@ -63,7 +85,7 @@ export const Button = ({ className, children, ...props }: ButtonProps) => {
   };
 
   const animateSuccess = async () => {
-    setStatus("success");
+    setInternalStatus("success");
     await animate(
       ".loader",
       {

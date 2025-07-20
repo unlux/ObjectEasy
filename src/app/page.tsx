@@ -24,6 +24,7 @@ import { InfoModal } from "@/components/InfoModal";
 import { UploadHistory } from "@/components/UploadHistory";
 import { uploadFile, UploadResult } from "@/lib/s3";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 const awsRegions = [
   "af-south-1",
@@ -213,10 +214,16 @@ const UploadPage = () => {
   const handleCancelUpload = () => {
     if (xhr) {
       xhr.abort();
-      setUploadStatus("idle");
+      // Set to error to trigger the red error state in the button
+      setUploadStatus("error");
       setUploadProgress(0);
       setXhr(null);
       toast.error("Upload cancelled.");
+
+      // Reset the status to idle after a longer delay to ensure the user sees the error state
+      setTimeout(() => {
+        setUploadStatus("idle");
+      }, 3000);
     }
   };
 
@@ -403,7 +410,15 @@ const UploadPage = () => {
                   !bucketName ||
                   !region
                 }
-                className="w-full"
+                className={cn(
+                  "w-full",
+                  uploadStatus === "error" && "bg-red-500 hover:ring-red-500",
+                  uploadStatus === "success" &&
+                    "bg-green-600 hover:ring-green-600",
+                  uploadStatus === "uploading" &&
+                    "bg-green-500 hover:ring-green-500",
+                  uploadStatus === "idle" && "bg-green-500 hover:ring-green-500"
+                )}
               >
                 Upload to S3
               </StatefulButton>
